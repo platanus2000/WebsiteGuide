@@ -16,6 +16,7 @@ from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_jwt.settings import api_settings
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+from rest_framework.permissions import BasePermission
 
 import os
 from django.conf import settings
@@ -43,6 +44,10 @@ class UserAuthView(APIView):
         else:
             return CustomResponse('用户名或密码错误!', status=status.HTTP_400_BAD_REQUEST)
 
+class CanViewWebsiteData(BasePermission):
+    def has_permission(self, request, view):
+        return True
+
 
 class AllWebsiteDataViewSet(ReadOnlyModelViewSet):
     '''
@@ -51,8 +56,8 @@ class AllWebsiteDataViewSet(ReadOnlyModelViewSet):
 
     # queryset = models.WebSiteGroup.objects.all()
     serializer_class = AllWebsiteDataSerializers
-    # authentication_classes = (JSONWebTokenAuthentication,)
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = (JSONWebTokenAuthentication,)
+    permission_classes = [CanViewWebsiteData]
     filter_backends = (SearchFilter,)
     search_fields = ('websites__title', 'websites__description', 'websites__website_group')
     '''默认参数pk修改为id'''
