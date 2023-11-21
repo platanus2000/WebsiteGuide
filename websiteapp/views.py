@@ -38,7 +38,8 @@ class UserAuthView(APIView):
         if user:
             payload = jwt_payload_handler(user)
             payload['is_superuser'] = user.is_superuser
-            return CustomResponse({'token': jwt_encode_handler(payload)}, status=status.HTTP_200_OK)
+            token = jwt_encode_handler(payload)
+            return CustomResponse({'token': token, 'username': request.user.username}, status=status.HTTP_200_OK)
         else:
             return CustomResponse('用户名或密码错误!', status=status.HTTP_400_BAD_REQUEST)
 
@@ -48,16 +49,21 @@ class AllWebsiteDataViewSet(ReadOnlyModelViewSet):
     首页分组嵌套网址数据：查询 /api/alldata/
     '''
 
-    queryset = models.WebSiteGroup.objects.all()
+    # queryset = models.WebSiteGroup.objects.all()
     serializer_class = AllWebsiteDataSerializers
     # authentication_classes = (JSONWebTokenAuthentication,)
     # permission_classes = [IsAuthenticated]
     filter_backends = (SearchFilter,)
-    search_fields = ('websites__title','websites__description')
+    search_fields = ('websites__title', 'websites__description', 'websites__website_group')
     '''默认参数pk修改为id'''
     lookup_field = 'pk'
     lookup_url_kwarg = 'id'
 
+    def get_queryset(self):
+        queryset = models.WebSiteGroup.objects.all()
+        if not self.request.user.is_authenticated:  # Check if the user is authenticated
+            queryset = queryset.exclude(websites__website_group__name='服务器')
+        return queryset
 
 class WebsiteDataViewSet(ModelViewSet):
     '''
